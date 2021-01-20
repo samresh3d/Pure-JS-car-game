@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>NITRO</title>
+
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+
+    <script src="http://code.createjs.com/easeljs-0.8.1.min.js"></script>
+    <script src="http://code.createjs.com/tweenjs-0.6.1.min.js"></script>
+    <script src="http://code.createjs.com/movieclip-0.8.1.min.js"></script>
+    <script src="http://code.createjs.com/preloadjs-0.6.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="js/greensock/TweenMax.min.js"></script>
+    <script src="game.js"></script>
+
+    <script>
+        var canvas, stage, exportRoot,
+            screen1, screen2, screen3,
+            screen4, logoArr1, logoArr2,
+            logoArr3, playArr, optionArr,
+            play_mc, option_mc, screen1Logo,
+            screen2, sc2car1, sc2car2,
+            sc2car3, sc2CarHover, sc2play,
+            sc2back, s2N1, s2N2, s2N3,
+            s2N4, s2N5, s2N6,
+            s3Tree1, s3Tree2, s3Bush1,
+            s3Bush2, s3startMark, s3RM1,
+            s3RM2, s3Car, carBackLight, carFrontLight, carNitro,
+            s3Nosfill1, s3Nosfill2, s3Nosfill3,
+            s3Nosfill4, s3Nosfill5, s3Nosfill6, resetTimeout,
+            s3Nosfill7, s3Nosfill8, s3Truck1, blastHolder,speedOnNitroFinish,finishSpeed,
+            s3Truck2, s3Truck3, nitroStartTimer, nitroStopTimer, scoreKm,table,
+            nitroEmpty = true,
+            playClicked = false,
+            selectedCar = 1, // 0, 1, 2
+            yLimit = 300,
+            yTop = -500,
+            hitted = false,
+            isNitro = false,
+            hitCount = 0,
+            movingObjects = [],
+            trucks = [],
+            TruckY = [-500, -1000, -1500],
+            TruckX = [-45, 45],
+            game = {
+                speed: 0,
+                distance: 0,
+                life: 3
+            },
+            continueHitCheck = true,
+            upkeyPressed = false,
+            downkeyPressed = false,
+            blast = new createjs.Bitmap('images/blast.png'),
+            nitroExhaustCount = 0,
+            nitroStarted=false,newDistence=10;
+
+        
+        function init() {
+
+            canvas = document.getElementById("canvas");
+            images = images || {};
+            var loader = new createjs.LoadQueue(false);
+            loader.addEventListener("fileload", handleFileLoad);
+            loader.addEventListener("complete", handleComplete);
+            loader.loadManifest(lib.properties.manifest);
+            
+        }
+
+        function handleFileLoad(evt) {
+            if (evt.item.type == "image") {
+                images[evt.item.id] = evt.result;
+            }
+        }
+
+        function handleComplete(evt) {
+
+            var preloader = document.getElementById("preloader");
+            preloader.style.opacity = 0;
+            preloader.style.visibility = "hidden";
+
+            exportRoot = new lib.game();
+            stage = new createjs.Stage(canvas);
+            stage.addChild(exportRoot);
+            stage.enableMouseOver(100); // 100 updates per second
+            blastHolder = new createjs.Container();
+
+            screen1 = exportRoot.screen1;
+            screen2 = exportRoot.screen2;
+            screen3 = exportRoot.screen3;
+            screen4 = exportRoot.screen4;
+
+            /*Screen 1 Variables*/
+            screen1Logo = screen1.screen1Logo;
+            logoArr1 = screen1.arrow1;
+            logoArr2 = screen1.arrow2;
+            logoArr3 = screen1.arrow3;
+            playArr = screen1.playArr;
+            optionArr = screen1.optionArr;
+            play_mc = screen1.play_mc;
+            option_mc = screen1.option_mc;
+
+            /*Screen 2 Variables*/
+            sc2car1 = screen2.car1;
+            sc2car2 = screen2.car2;
+            sc2car3 = screen2.car3;
+            sc2CarHover = screen2.selector;
+            sc2play = screen2.palynext;
+            sc2back = screen2.back;
+            s2N1 = screen2.n1;
+            s2N2 = screen2.n2;
+            s2N3 = screen2.n3;
+            s2N4 = screen2.n4;
+            s2N5 = screen2.n5;
+            s2N6 = screen2.n6;
+
+            /*Screen 3 Variables*/
+            s3Tree1 = screen3.tree1;
+            s3Tree2 = screen3.tree2;
+            s3Bush1 = screen3.bush1;
+            s3Bush2 = screen3.bush2;
+            s3startMark = screen3.startMark;
+            s3RM1 = screen3.RM1;
+            s3RM2 = screen3.RM2;
+            s3Car = screen3.cars;
+            carBackLight = s3Car.backLight;
+            carFrontLight = s3Car.frontLight;
+            carNitro = screen3.cars.nos;
+            s3Nosfill1 = screen3.fill1;
+            s3Nosfill2 = screen3.fill2;
+            s3Nosfill3 = screen3.fill3;
+            s3Nosfill4 = screen3.fill4;
+            s3Nosfill5 = screen3.fill5;
+            s3Nosfill6 = screen3.fill6;
+            s3Nosfill7 = screen3.fill7;
+            s3Nosfill8 = screen3.fill8;
+            s3Truck1 = screen3.truck1;
+            s3Truck2 = screen3.truck2;
+            s3Truck3 = screen3.truck3;
+            movingObjects = [s3Tree1, s3Tree2, s3Bush1, s3Bush2, s3startMark, s3RM1, s3RM2, s3Truck1, s3Truck2, s3Truck3];
+            trucks = [s3Truck1, s3Truck2, s3Truck3];
+            stage.update();
+
+            createjs.Ticker.setFPS(lib.properties.fps);
+            createjs.Ticker.addEventListener("tick", stageUpdate);
+
+        }
+
+        function stageUpdate() {
+
+            play_mc.addEventListener("mouseover", onPlayOver);
+            play_mc.addEventListener("mouseout", onPalyOut);
+            play_mc.addEventListener("click", onPalyClick);
+
+            option_mc.addEventListener("mouseover", onOoptionOver);
+            option_mc.addEventListener("mouseout", onOptionOut);
+            option_mc.addEventListener("click", onOptionclick);
+
+            TweenMax.to(screen1, .5, {alpha: "1"});
+            TweenMax.to(screen1Logo, .5, {x: "0",y: "-215",delay: .15,ease: Back.easeOut});
+            TweenMax.to(logoArr2, .75, {x: "112",y: "-267",delay: .25,ease: Back.easeOut});
+            TweenMax.to(logoArr3, .75, {x: "102",y: "-190",delay: .5,ease: Back.easeOut});
+            TweenMax.to(logoArr1, .75, {x: "-107",y: "-244",delay: .75,ease: Back.easeOut});
+
+            TweenMax.staggerTo([playArr, play_mc, optionArr, option_mc], 1, {alpha: 1,delay: 1,ease: Back.easeOut}, .1);
+
+            if (playClicked) 
+            {
+                
+                if(hitCount<4){
+
+                    runGame(true); //  PLAY BUTTEN IS CLECKED SO START GAME.
+                    checkHit(); //  CHECKING WETHER CAR IS HITTED OR NOT.
+
+                }else{
+
+                        runGame(false);
+                        console.log("stage is updating");
+                    }
+            }
+            
+            stage.update();
+        }
+        
+        //ON PLAY BUTTON IS HOVERS IN SCREEN 1.   
+        function onPlayOver(event) {
+
+            TweenMax.to(play_mc, .1, {scaleX: "1.1",scaleY: "1.1"});
+            TweenMax.to(option_mc, .1, {scaleX: "1",scaleY: "1"});
+        }
+
+        //ON PLAY BUTTON IS HOVERS OUT SCREEN 1.   
+        function onPalyOut(event) {
+            TweenMax.to(play_mc, .1, {scaleX: "1",scaleY: "1"});
+        }
+
+        // WHEN PLAY BUTTON IS CLICKED FOR BOTH SCREEN 1ST AND 2ND SCREEN.  
+        function onPalyClick(event) {
+            
+            playClicked = true;
+            s3Car.gotoAndStop(selectedCar);
+            screen3.visible = true;
+            runGame(true);
+            
+            TweenMax.to(screen3, .5, {alpha: 1});
+            TweenMax.to([screen1, screen2], .5, {alpha: 0,onComplete: function () {screen1.visible = screen2.visible = false;}});
+
+            document.getElementById("dis").style.opacity = 1;
+            document.getElementById("speed").style.opacity = 1;
+            document.getElementById("life").style.opacity = 1;
+
+            window.parent.document.body.onkeydown = onKeyDown;
+            window.parent.document.body.onkeyup = onKeyUp;
+
+            // Adding the events on the iFrame body as well for replays.
+            window.document.body.onkeydown = onKeyDown;
+            window.document.body.onkeyup = onKeyUp;
+            
+            window.parent.document.body.focus();
+
+        }
+
+        //ON OPTION BUTTON IS HOVERS IN ON SCREEN 1.
+        function onOoptionOver(event) {
+
+            TweenMax.to(play_mc, .1, {scaleX: "1",scaleY: "1"});
+            TweenMax.to([option_mc], .1, {scaleX: "1.1",scaleY: "1.1"});
+        }
+
+        //ON OPTION BUTTON IS HOVERS OUT SCREEN 1.   
+        function onOptionOut(event) {
+            TweenMax.to([option_mc, optionArr], .1, {scaleX: "1",scaleY: "1"});
+        }
+
+        // WHEN OPTION CLICKED ON SCREEN 1.   
+        function onOptionclick(event) {
+
+            screen1.visible = false;
+            screen2.visible = true;
+            TweenMax.to(screen2, .5, {alpha: 1});
+
+            NitroScreen2(); //starts the animation for bottel fill.
+
+            sc2car1.addEventListener("click", function () {
+                
+                sc2CarHover.x = -90;
+                selectedCar = 0;
+                TweenMax.to(sc2CarHover, .15, {scaleX: .95,scaleY:.95,onUpdate:function(){stage.update();},onComplete:function(){TweenMax.to(sc2CarHover, .15, {scaleX: 1,scaleY:1,onUpdate:function(){stage.update();}})}, repeat: 0});
+                
+            });
+            
+            sc2car2.addEventListener("click", function () {
+                
+                sc2CarHover.x = 0;
+                selectedCar = 1;
+                TweenMax.to(sc2CarHover, .15, {scaleX: .95,scaleY:.95,onUpdate:function(){stage.update();},onComplete:function(){TweenMax.to(sc2CarHover, .15, {scaleX: 1,scaleY:1,onUpdate:function(){stage.update();}})}, repeat: 0});
+                
+            });
+            
+            sc2car3.addEventListener("click", function () {
+                
+                sc2CarHover.x = 90;
+                selectedCar = 2;
+                TweenMax.to(sc2CarHover, .15, {scaleX: .95,scaleY:.95,onUpdate:function(){stage.update();},onComplete:function(){TweenMax.to(sc2CarHover, .15, {scaleX: 1,scaleY:1,onUpdate:function(){stage.update();}})}, repeat: 0});
+                
+            });
+            
+            // PLAY OVER ON OPTION SCREEN.
+            sc2play.addEventListener("mouseover", function () {sc2play.scaleX = sc2play.scaleY = 1.15;});
+
+            // PLAY OUT ON OPTION SCREEN.
+            sc2play.addEventListener("mouseout", function () {sc2play.scaleX = sc2play.scaleY = 1;});
+
+            //  PLAY CLICK ON SCOND SCREEN.
+            sc2play.addEventListener("click", onPalyClick);
+
+            // BACK OVER ON OPTION SCREEN
+            sc2back.addEventListener("mouseout", function () {sc2back.scaleX = sc2back.scaleY = 1;});
+
+            // BACK OUT ON OPTION SCREEN
+            sc2back.addEventListener("mouseover", function () {sc2back.scaleX = sc2back.scaleY = 1.15;});
+
+            // BACK CLICK ON OPTION SCREEN
+            sc2back.addEventListener("click", onBackClick);
+
+        }
+        
+        //ON BACK BUTTON IS CLICKED ON SCREEN 2.    
+        function onBackClick(event) {
+            
+            screen1.visible = true;
+            TweenMax.to(screen1, .5, {alpha: 1});
+            TweenMax.to(screen2, .5, {alpha: 0,onComplete: function () {screen2.visible = false;}});
+            
+        }
+
+        
+
+        //FUNCTION FOR RUNNING GAME.    
+        function runGame(carLifeAvailable) {
+
+            if (carLifeAvailable) {
+
+                for (var i = 0; i < movingObjects.length; i++) {
+                    
+                    if (s3startMark.y > 342) {
+                        
+                        s3startMark.y = 342
+                        
+                    };
+                    if (s3Tree1.y > 355) {
+                        
+                        s3Tree1.y = -355
+                        
+                    };
+                    if (s3Tree2.y > 355) {
+                        
+                        s3Tree2.y = -355
+                        
+                    };
+                    if (s3Bush1.y > 580) {
+                        
+                        s3Bush1.y = -1000
+                        
+                    };
+                    if (s3Bush2.y > 418) {
+                        
+                        s3Bush2.y = -580
+                        
+                    };
+                    if (s3RM1.y > 580) {
+                        
+                        s3RM1.y = s3RM2.y - 580
+                        
+                    };
+                    if (s3RM2.y > 580) {
+                        
+                        s3RM2.y = s3RM1.y - 580
+                        
+                    };
+                    
+                    movingObjects[i].y += game.speed;
+                }
+
+                for (var j = 0; j < trucks.length; j++) {
+
+                    if (trucks[j].y >= 900) {
+                        trucks[j].x = TruckX[getRandomIntInclusive(0, 1)];
+                        trucks[j].y = -1800;
+                        checkAndReposition();
+                    }
+                }
+
+                trucks[0].y += game.speed / 4;
+                trucks[2].y += game.speed / 5;
+                trucks[1].y += game.speed / 2;
+
+                if (hitCount < 4) {
+                    
+                    document.getElementById("life").innerHTML = (game.life - hitCount) + "<span>x</span>3";
+                    
+                }
+                if (upkeyPressed) {
+                    
+                    game.distance = game.distance + (game.speed * .001);
+                    
+                    if(game.distance>newDistence){
+                        
+                        newDistence += 10;
+                        
+                        speedOnNitroFinish = game.speed;
+
+                        TweenMax.to(game,2,{speed:"+=5",onUpdate:function(){stage.update();}});
+                        
+                    }
+
+                    document.getElementById("speed").innerHTML = (game.speed * 3).toFixed(0) + "<span> KM/H</span>";
+                    document.getElementById("dis").innerHTML = game.distance.toFixed(1) + "<span> KM</span>";
+                    
+                } else {
+                    
+                    document.getElementById("speed").innerHTML = (game.speed * 3).toFixed(0) + "<span> KM/H</span>";
+                }
+
+            } else {
+                
+                window.parent.document.body.onkeydown = null;
+                window.parent.document.body.onkeyup = null;
+
+                // Adding the events on the iFrame body as well for replays.
+                window.document.body.onkeydown = null;
+                window.document.body.onkeyup = null;
+                
+                var reBtn = document.getElementById("replay");
+                
+                // When car is hitted more then 3 times.
+                scoreKm = document.getElementById("scoreKm");
+                scoreKm.style.visibility = "visible";
+                scoreKm.innerHTML = "YOU MADE IT TO " + game.distance.toFixed(1) + " KM";
+                
+                reBtn.style.visibility = "visible";
+                
+                TweenMax.killTweensOf(game);
+        
+                hitCount = 4;
+                game.speed = 0;
+                carNitro.visible = false;
+                screen4.visible = true;
+                
+                stage.addChild(blastHolder);
+                blastHolder.alpha = 1;
+                blast.y = (s3Car.y * 2);
+                blast.x = s3Car.x;
+
+                if (s3Car.x == 45) {
+                    blast.x = 160;
+                } else {
+                    blast.x = 75
+                }
+                blastHolder.addChild(blast);
+
+                TweenMax.to([blastHolder, screen3], .5, {alpha: "0",onUpdate: function () {stage.update();},delay: 1});
+                TweenMax.to([dis, speed, life], .5, {alpha: 0,delay: 1});
+                TweenMax.to([reBtn, scoreKm], 1, {opacity: 1,delay: 1});
+                TweenMax.to(screen4, 1, {alpha: "1",onUpdate: function () {stage.update();},delay: 1});
+            }
+        }
+
+        //ON KEY DOWN 
+        function onKeyDown(e) {
+
+            e = e || window.event;
+
+            if (e.keyCode == '119' || e.keyCode == '87') {
+                // w || W  will work as up arrow.
+                
+                carFrontLight.alpha = 1;
+                if(!nitroStarted){ 
+                    nitroStarted=true; 
+                    TweenMax.killTweensOf([s3Nosfill1, s3Nosfill2, s3Nosfill3, s3Nosfill4, s3Nosfill5, s3Nosfill6, s3Nosfill7, s3Nosfill8]);
+                    clearTimeout(nitroStartTimer);
+                    nitroStartTimer = setTimeout(updateNitro, 7000);
+                }
+                upkeyPressed = true;
+                TweenMax.to(game, 3, {speed: "20",onUpdate: function () {stage.update();}});
+            } 
+            else if (e.keyCode == '83' || e.keyCode == '115') 
+            {
+                // s || S will work as down arrow
+                
+                downkeyPressed = true;
+                carBackLight.alpha = 1;
+
+                if (game.speed < 2 || game.speed == 0) {
+                    game.speed = 0
+                    carNitro.visible = false;
+                    carNitro.alpha = 0;
+                    stage.update();
+                } else {
+                    TweenMax.to(game, .25, {speed: 0,onUpdate: function () {stage.update();}});
+                }
+            } 
+            else if (e.keyCode == '65' || e.keyCode == '97') 
+            {
+                // a || A will work as left arrow
+                
+                TweenMax.to(s3Car, .15, {x: "-45",ease: Cubic.easeInOut});
+            } 
+            else if (e.keyCode == '68' || e.keyCode == '100') 
+            {
+                // d || D will work as right arrow
+                
+                TweenMax.to(s3Car, .15, {x: "45",ease: Cubic.easeInOut});
+
+            } 
+            else if (e.keyCode == '78' || e.keyCode == '110') {
+                // N || n  Key
+
+                if (upkeyPressed && !nitroEmpty) {
+
+                    nitroEmpty = true;
+                    TweenMax.to(game, 1, {speed: "+=15",onUpdate: function () {carNitro.visible = true;carNitro.alpha = 1;stage.update();}});
+                    
+                    //JUST TO ENSURE THAT WE ARE CALLING FUNCTION ONLY ONCE.
+                    nitroExhaustCount += 1;     
+                    if (nitroExhaustCount == 1) {
+                        
+                        exhaustNitro();
+                    }
+                }
+            }
+
+            if (downkeyPressed && upkeyPressed) {
+                
+                for (i = 0; i < trucks.length; i++) 
+                {
+                    TweenMax.killTweensOf(trucks[i]);
+                    moveTruck(trucks[i]);
+                }
+            }      
+        }
+
+        //ON KWY UP.    
+        function onKeyUp(e) {
+
+            e = e || window.event;
+            if (hitCount < 4) {
+                if (e.keyCode == '119' || e.keyCode == '87') {
+                    // w || W  will work as up arrow.
+                    
+                    upkeyPressed = false;
+                    
+                    TweenMax.to(game, 2, {speed: "0",onUpdate: function () {stage.update();},onComplete: function () {carNitro.visible = false;carNitro.alpha = 0;stage.update();}});
+
+                    for (i = 0; i < trucks.length; i++) {
+                        
+                        TweenMax.killTweensOf(trucks[i]);
+                        moveTruck(trucks[i]);
+                        
+                    }
+                    
+                } else if (e.keyCode == '83' || e.keyCode == '115') {
+                    // s || S will work as down arrow
+                    
+                    carBackLight.alpha = 0;
+                    downkeyPressed = false;
+                    
+                }
+            }
+        }
+
+        //LOOPING TRUCKS   
+        function moveTruck(truck) {
+            if (truck.y < 350) {
+                TweenMax.to(truck, 5, {
+                    y: -(canvas.height * 2),
+                    onUpdate: function () {
+                        stage.update();
+                    },
+                    onComplete: function () {
+                        trucks[0].x = 45;
+                        trucks[0].y = -600;
+                        trucks[1].x = -45;
+                        trucks[1].y = -1800;
+                        trucks[2].x = 45;
+                        trucks[2].y = -3000;
+                        window.parent.document.body.onkeydown = onKeyDown;
+                        window.parent.document.body.onkeyup = onKeyUp;
+                        stage.update();
+                    }
+                });
+            }
+        }
+
+        //UPDATE NITRO WHEN W IS PRESSED FOR FIRST TIME AND N IS PRESSED.  
+        function updateNitro() {
+            
+            clearTimeout(nitroStartTimer);
+            
+            stopNitro =false;
+            
+            TweenMax.staggerTo([s3Nosfill1, s3Nosfill2, s3Nosfill3, s3Nosfill4, s3Nosfill5, s3Nosfill6, s3Nosfill7, s3Nosfill8], .5, {alpha: 1,onUpdate: function () {stage.update();}}, .75);
+            
+            setTimeout(function () {nitroEmpty = false;}, 7000);
+
+        }
+
+        // ON NITRO FINISH   
+        function onNitroFinish() {
+          
+            nitroExhaustCount = 0;
+            
+            nitroEmpty = true;
+            
+            nitroStarted = false;
+            
+            
+            stage.update();
+            
+            if (upkeyPressed) {
+                finishSpeed = game.speed - 10;
+            } else {
+                finishSpeed = 0
+            }
+            
+            TweenLite.to(game, 1, {speed: finishSpeed,onUpdate: function () {stage.update();},onComplete:function(){
+                carNitro.visible = false;
+                carNitro.alpha = 0;
+                console.log("2@@@@@@")
+            }});
+            
+            clearTimeout(nitroStopTimer);
+            
+            nitroStartTimer = setTimeout(updateNitro, 7000);
+        }
+
+        // ON REPLAY CLICKED.    
+        function replay() {
+            
+            resetObjects();
+            
+            var reBtn = document.getElementById("replay");
+
+            TweenLite.to(screen1, .25, {alpha: 1,onUpdate: function () {stage.update();}});
+
+            TweenLite.to([screen2, screen3, screen4], .25, {alpha: 0,onUpdate: function () {stage.update();}});
+            
+            TweenMax.to(reBtn, .25, {opacity: 0,onComplete: function () {
+                reBtn.style.visibility = "hidden";
+                createjs.Ticker.addEventListener("tick", stageUpdate);
+                screen2.visible = false;
+                screen3.visible = false;
+                screen4.visible = false;
+                stage.update();
+                }});
+        }
+        
+        
+        function resetObjects() {
+            
+            TweenMax.killAll();
+            createjs.Ticker.removeEventListener("tick", stageUpdate);
+            
+            clearTimeout(nitroStartTimer);
+            clearTimeout(nitroStopTimer);
+
+            s3Truck1.x          =   45;
+            s3Truck1.y          =   -600;
+    
+            s3Truck2.x          =   -45;
+            s3Truck2.y          =   -1800;
+    
+            s3Truck3.x          =   45;
+            s3Truck3.y          =   -3000;
+            s3Car.x             =   -45;
+    
+            s3startMark.x       =   0;
+            s3startMark.y       =   137;
+    
+            s3RM1.x             =   0;
+            s3RM1.y             =   -210;
+    
+            s3RM2.x             =   0;
+            s3RM2.y             =   -810;
+    
+            s3Bush1.x           =   125;
+            s3Bush1.y           =   0;
+    
+            s3Bush2.x           =   125;
+            s3Bush2.y           =   -562;
+    
+            s3Tree1.x           =   -121;
+            s3Tree1.y           =   42;
+    
+            s3Tree2.x           =   -129;
+            s3Tree2.y           =   -361;
+    
+            game.life           =   3;
+            game.distance       =   0;
+            game.speed          =   0;
+            hitCount            =   0;
+            screen1.visible     =   true;
+            playClicked         =   false;
+            newDistence         =   10;
+            nitroStarted        =   false;
+            speedOnNitroFinish  =   0;
+            finishSpeed         =   0;
+            nitroExhaustCount   =   0;
+            
+            TweenMax.to([s3Nosfill8, s3Nosfill7, s3Nosfill6, s3Nosfill5, s3Nosfill4, s3Nosfill3, s3Nosfill2, s3Nosfill1], 0, {alpha: 0,onUpdate: function () {stage.update();}});
+
+            blastHolder.removeChildAt(0);
+            stage.removeChild(blastHolder);
+            
+            carFrontLight.alpha = 0;
+            carBackLight.alpha = 0;
+            
+            scoreKm.style.opacity = 0;
+            scoreKm.style.visibility = "hidden";
+            
+            stage.update();
+
+        }
+        
+        //GAME BEHAVIOUR ON CAR IS HITTED.    
+        function checkHit() {
+
+            if (continueHitCheck) {
+
+                if (hitTest(trucks, s3Car)) {
+                    
+                    if (hitCount < 4) {
+                        
+                        TweenMax.to(s3Car, .25, {alpha: ".2",onUpdate: function () {continueHitCheck = false;stage.update();},onComplete: function () {TweenMax.to(s3Car, .25, {alpha: "1"})},repeat: 7});
+                        setTimeout(function () {continueHitCheck = true;}, 2100); 
+                        
+                    } 
+                }   
+            }
+        }
+
+
+        //NITRO ANIMATION ON SCREEN 2.
+        function NitroScreen2() {
+
+            TweenMax.staggerTo([s2N1, s2N2, s2N3, s2N4, s2N5, s2N6], 1, {alpha: 1,delay: .25,ease: Back.easeOut,onComplete: function () {TweenMax.staggerTo([s2N6, s2N5, s2N4, s2N3, s2N2, s2N1], 1, {alpha: 0,onComplete: function () {NitroScreen2();}}, .25);}}, .1);
+        }
+        
+        //FUNCTION FOR SYNC NTRO BOOST TIME AND ANIMATION OF IT.    
+        function exhaustNitro() {
+            
+                TweenMax.killTweensOf([s3Nosfill1, s3Nosfill2, s3Nosfill3, s3Nosfill4, s3Nosfill5, s3Nosfill6, s3Nosfill7, s3Nosfill8]);
+            
+                TweenMax.staggerTo([s3Nosfill8, s3Nosfill7, s3Nosfill6, s3Nosfill5, s3Nosfill4, s3Nosfill3, s3Nosfill2, s3Nosfill1], .5, {alpha: 0,onUpdate: function () {stage.update();}}, .75);
+            
+                clearTimeout(nitroStartTimer);
+                
+                nitroStopTimer = setTimeout(onNitroFinish, 8000);
+            }
+
+        // TO CHECK WEATHER THE OBJECT ARE HITTED OR NOT.    
+        function hitTest(objects, car) {
+
+            var xDiff, yDiff;
+
+            for (i = 0; i < objects.length; i++) {
+
+                xDiff = Math.floor(Math.abs(objects[i].x - car.x));
+                yDiff = Math.floor(Math.abs(objects[i].y - car.y));
+
+                if (xDiff == 0 && yDiff <= 150) {
+                    //  stage.addChild(imageHolder);
+                    hitted = true;
+                    hitCount = hitCount < 4?hitCount +=1:hitCount=4;
+                    break;
+                } else {
+                    hitted = false;
+                }
+            }
+            console.log(hitCount);
+            return hitted;
+
+        }
+        
+        //WHEN ER ARE REPOSITIONING THE TRUCK TO TOP JUST ENUREING THAT THEY ARE ARRANGED WITH PROPER DISTENCE
+        function checkAndReposition() {
+            
+            var yDiff;
+            table = [0, 1, 2];
+
+            for (var i = 0; i < trucks.length; i++) {
+
+                var index = table.indexOf(i);
+                table.splice(index, 1);
+
+                for (var j = 0; j < table.length; j++) {
+
+                    var truckIndex = parseInt(table[j]);
+
+                    yDiff = Math.abs(trucks[i].y - trucks[truckIndex].y);
+
+                    if (yDiff < 1200 && trucks[i].y < -600) {
+
+                        trucks[i].y = -3000;
+
+                    }
+                    stage.update();
+                }
+                table = [0, 1, 2];
+            }
+        }
+        
+        // TO GET RANDOM NUMBER IN A NUMBER RANGE.     
+        function getRandomIntInclusive(min, max) {
+            
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+    </script>
+
+</head>
+
+
+<body onload="init();" style="background-color:#D4D4D4">
+    <div id="banner">
+
+        <canvas id="canvas" width="300" height="600" style="background-color:#141413"></canvas>
+        <div id="dis">00<span> KM</span></div>
+        <div id="speed">00<span> KM/H</span></div>
+        <div id="life">03</div>
+        <div id="replay" onclick="replay();"></div>
+
+        <div id="scoreKm"></div>
+
+        <div id="preloader"></div>
+
+    </div>
+</body>
+
+</html>

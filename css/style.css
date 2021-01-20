@@ -1,0 +1,95 @@
+@font-face {
+    font-family: "airstrike";
+    src:url(../fonts/airstrikecond.woff) format('woff'),
+        url(../fonts/airstrike.ttf) format('truetype');
+}
+body{
+    width:300px;
+    height:600px;
+    margin: 0;
+}
+
+div {
+    font-family: airstrike;
+    font-size: 14px;
+    color: #ff0000;
+    width:auto;
+}
+span{
+    font-size: 8px; 
+    color: #ff0000;
+}
+#dis{
+    top:47px;
+    left:10px;  
+    position:absolute;
+    opacity: 0;
+}
+#speed{
+    top:96px;
+    left:10px;
+    position:absolute;
+    opacity: 0;
+}
+#life{
+    top:22px;
+    right:10px;
+    position:absolute;
+    opacity: 0;
+}
+#replay{
+    background-image: url("../images/replay.png");
+    width:17px;
+    height:18px;
+    position: absolute;
+    top:2px;
+    right:2px;
+    visibility: hidden;
+    opacity: 0;
+    
+	-moz-transition: all .25s ease;
+	-webkit-transition: all .25s ease;
+	-o-transition: all .25s ease;
+	transition: all .25s ease;
+}
+#replay:hover{
+    cursor: pointer;
+    -moz-transform:scale(1.15) rotate(180deg);
+    -webkit-transform: scale(1.15) rotate(180deg);
+    -o-transform: scale(1.15) rotate(180deg);
+    transform: scale(1.15) rotate(180deg);
+}
+#banner{
+    width:300px;
+    height:600px;
+    position: absolute;
+    top:0px;
+    left: 0px;
+}
+#preloader{
+    width:100px;
+    height:100px;
+    left:100px;
+    top:250px;
+    position: absolute;
+    opacity:1;
+    visibility: visible;
+    background-image: url("../images/preloader.gif");
+    background-color: rgba(0,0,0,0); 
+}
+
+#scoreKm{
+    width:150px;
+    height: 10px;
+    position: absolute;
+    top:45px;
+    left:40px;
+    font-size: 14px;
+    opacity:0;
+    visibility: hidden;
+    cursor: default;
+    -webkit-user-select: none;  /* Chrome all / Safari all */
+    -moz-user-select: none;     /* Firefox all */
+    -ms-user-select: none;      /* IE 10+ */
+    user-select: none;          /* Likely future */     
+}
